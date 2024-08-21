@@ -4,6 +4,8 @@ from dotenv import load_dotenv
 import psycopg2
 from psycopg2 import pool
 
+from contextlib import contextmanager
+
 
 load_dotenv('.env')
 conn_params = {
@@ -17,9 +19,11 @@ conn_params = {
 conn_pool = psycopg2.pool.SimpleConnectionPool(1, 20, **conn_params)
 
 
+@contextmanager
 def get_db_connection():
     conn = conn_pool.getconn()
-    try:
-        yield conn
-    finally:
-        conn_pool.putconn(conn)
+    yield conn
+
+
+def return_conn(conn):
+    conn_pool.putconn(conn)
