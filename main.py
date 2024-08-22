@@ -24,7 +24,8 @@ else:
 
 
 # Simulating the user pasting job desc
-with open("desc.txt", "r") as f:
-    jobdesc = f.read()
+def func():
+    with open("desc.txt", "r") as f:
+        jobdesc = f.read()
 
-jobdesc_embeds = Utility.generate_embeddings(jobdesc)
+    jobdesc_embeds = Utility.generate_embeddings(jobdesc)

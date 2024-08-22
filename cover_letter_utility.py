@@ -61,15 +61,15 @@ class Utility:
             truncation=True,
             return_tensors="pt",
             add_special_tokens=True,
-            max_length=768
+            max_length=512
         )
         with torch.no_grad():
             outputs = Utility.EMBEDDING_MODEL(
                 encoding["input_ids"],
-                attention_mask=encoding["attention_mask"]
+                attention_mask=encoding["attention_mask"],
             )
             word_embeddings = outputs.last_hidden_state[:, 0, ].numpy().flatten()
-            return word_embeddings
+            return word_embeddings.tolist()
 
     # Creates new user in users table
     @staticmethod
