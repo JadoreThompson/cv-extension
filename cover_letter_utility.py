@@ -3,16 +3,15 @@ from dotenv import load_dotenv
 
 import torch
 from transformers import BertModel, BertTokenizer
-from langchain_huggingface import HuggingFaceEmbeddings
-from langchain_experimental.text_splitter import SemanticChunker
 
 import docx
 from pypdf import PdfReader
 
 from argon2 import PasswordHasher
 from psycopg2 import IntegrityError
-from pgvector.psycopg2 import register_vector
 from db_connection import get_db_connection, return_conn
+
+import google.generativeai as genai
 
 
 load_dotenv(".env")
@@ -22,14 +21,6 @@ class Utility:
     EMBEDDING_MODEL_NAME = os.getenv("EMBEDDING_MODEL_NAME")
     EMBEDDING_MODEL = BertModel.from_pretrained(EMBEDDING_MODEL_NAME)
     TOKENIZER = BertTokenizer.from_pretrained(EMBEDDING_MODEL_NAME)
-
-    # # Configuring the splitter
-    # LANGCHAIN_EMBEDDER = HuggingFaceEmbeddings(model_name=EMBEDDING_MODEL_NAME)
-    # TEXT_SPLITTER = SemanticChunker(
-    #     embeddings=LANGCHAIN_EMBEDDER,
-    #     # breakpoint_threshold_type="standard_deviation"
-    #     breakpoint_threshold_type="percentile"
-    # )
 
     # Returns string of file type
     @staticmethod
@@ -89,7 +80,6 @@ class Utility:
             ph = PasswordHasher()
             hashed_pw = ph.hash(password)
             user_dict = {"email": email, "password": hashed_pw}
-            # df = pd.DataFrame(user_dict)
             values = (email, password)
         else:
             user_dict = {"email": email}
@@ -205,46 +195,63 @@ class Utility:
     @ staticmethod
     # def generate_cover_letter():
     def generate_cover_letter(related_docs, job_desc, bio=None):
-        full_prompt = f"""
-        Job description: {job_desc}
-        
-        Question: Generate a cover letter for the job description tailored to the company.
-        """
+        try:
+            genai.configure(api_key=os.getenv("GEMINI_APIKEY"))
+            TEXT_GEN_MODEL = genai.GenerativeModel("gemini-1.5-pro")
 
-        full_prompt += "Context:\n"
-        for doc in related_docs:
-            full_prompt += f"""
-            {doc[0]}\n
+            full_prompt = f"""
+            Job description: {job_desc}
+            
+            Question: Generate a cover letter for the job description tailored to the company.
             """
 
-        full_prompt += """
-        The structure should be:
-        
-        - Opening Paragraph: Introduce myself, mention my most relevant pieces of experience,
-        highlight my most relevant pieces of experience. Establish my passion for the job, mentioning
-        my relevant experience and how it fits my expertise.Generate a short tale of why the company
-        fits me. Conclude this paragraph leading onto the next paragraph.
-        
-        - Middle Paragraph: Talk about specifics, pin point the most important requirements for the role
-        and pair my context with it. Going deeper into my experience means explaining the steps I took
-        and impact I made through my experience. This paragraph is all about making myself seem like
-        the best fit for this role.
-        
-        - Closing Paragraph: Thank the employer for their time and consideration. If there are any
-        requirements for the role not addressed in the context. Address them in this paragraph. Be sure
-        to not make myself feel unqualified, instead when addressing my gaps make me sound like the
-        best because of these gaps. Express interest in the role and lead onto the next stage in the
-        recruitment process.
-        
-        - Close and Signature: Choose between (Sincerely, Regards, Best, Respectfully, Thank You,
-        Thank You for Your Consideration)
-        
-        Make sure there are no bold characters
-        
-        """
+            full_prompt += "Context:\n"
+            for doc in related_docs:
+                full_prompt += f"""
+                {doc[0]}\n
+                """
 
-        if bio:
-            full_prompt += bio
+            full_prompt += """
+            The structure should be:
+            
+            - Opening Paragraph: Introduce myself, mention my most relevant pieces of experience,
+            highlight my most relevant pieces of experience. Establish my passion for the job, mentioning
+            my relevant experience and how it fits my expertise.Generate a short tale of why the company
+            fits me by researching the company on the internet and producing a short summary for the company
+            that you can use a database to cross reference. Conclude this paragraph leading onto the next 
+            paragraph.
+            
+            - Middle Paragraph: Talk about specifics, pin point the most important requirements for the role
+            and pair my context with it. Going deeper into my experience means explaining the steps I took
+            and impact I made through my experience. This paragraph is all about making myself seem like
+            the best fit for this role.
+            
+            - Closing Paragraph: Thank the employer for their time and consideration. If there are any
+            requirements for the role not addressed in the context. Address them in this paragraph. Be sure
+            to not make myself feel unqualified, instead when addressing my gaps make me sound like the
+            best because of these gaps. Express interest in the role and lead onto the next stage in the
+            recruitment process.
+            
+            - Close and Signature: Choose between (Sincerely, Regards, Best, Respectfully, Thank You,
+            Thank You for Your Consideration)
+            
+            Make sure there are no bold characters in the response. The response mustn't require the user
+            to add more information to it. You must write it to completion. The whole cover letter should be
+            no larger than 500 words
+            
+            """
 
-        full_prompt += "Answer: "
-        return full_prompt
+            if bio:
+                full_prompt += bio
+
+            full_prompt += "Answer: "
+
+            completion = TEXT_GEN_MODEL.generate_content(full_prompt)
+            completion = completion.candidates[0].content.parts[0].text
+            completion = completion.replace(["*", "**"], "")
+
+            return completion
+        except Exception as e:
+            print(e)
+            return None
+
