@@ -13,7 +13,6 @@ from db_connection import get_db_connection, return_conn
 
 import google.generativeai as genai
 
-
 load_dotenv(".env")
 
 
@@ -75,15 +74,15 @@ class Utility:
 
     # Creates new user in users table
     @staticmethod
-    def create_new_user(email, password=None):
+    def create_new_user(email, name, password=None):
         if password:
-            ph = PasswordHasher()
-            hashed_pw = ph.hash(password)
-            user_dict = {"email": email, "password": hashed_pw}
-            values = (email, password)
+            # ph = PasswordHasher()
+            # hashed_pw = ph.hash(password)
+            user_dict = {"email": email, "password": password, "name": name}
+            values = (email, password, name)
         else:
-            user_dict = {"email": email}
-            values = (email,)
+            user_dict = {"email": email, "name": name}
+            values = (email, name)
 
         cols = ", ".join(user_dict.keys())
         placeholders = ", ".join(["%s"] * len(user_dict.keys()))
@@ -109,6 +108,27 @@ class Utility:
         except Exception as e:
             conn.rollback()
             print(f"Unexpected error: {e}")
+            return None
+        finally:
+            return_conn(conn)
+
+    # Logs in the user
+    @staticmethod
+    def login_user(email, password=None):
+        try:
+            with get_db_connection() as conn:
+                with conn.cursor() as cur:
+                    cur.execute("""
+                        SELECT id
+                        FROM users
+                        WHERE email = %s AND password = %s; 
+                    """, (email, password))
+                    result = cur.fetchone()[0]
+                    return result
+        except Exception as e:
+            conn.rollback()
+            print("Login User: ", e)
+            return None
         finally:
             return_conn(conn)
 
@@ -121,7 +141,7 @@ class Utility:
                     cur.execute("""
                         SELECT id FROM users
                         WHERE email = %s;
-                    """, (email, ))
+                    """, (email,))
 
                     result = cur.fetchone()
                     if result:
@@ -152,6 +172,12 @@ class Utility:
         try:
             with get_db_connection() as conn:
                 with conn.cursor() as cur:
+                    cur.execute("""
+                        DELETE
+                        FROM cv_lines
+                        WHERE user_id = %s;
+                    """, (user_id, ))
+
                     lines = text.split("\n")
                     for line in lines:
                         if line.strip():
@@ -162,9 +188,11 @@ class Utility:
                                 VALUES (%s, %s, %s);
                             """, (user_id, line, line_embed))
                     conn.commit()
+                    return True
         except Exception as e:
             conn.rollback()
             print(f"Error adding document to table: {e}")
+            return False
         finally:
             return_conn(conn)
 
@@ -192,7 +220,7 @@ class Utility:
         finally:
             return_conn(conn)
 
-    @ staticmethod
+    @staticmethod
     # def generate_cover_letter():
     def generate_cover_letter(related_docs, job_desc, bio=None):
         try:
@@ -237,7 +265,7 @@ class Utility:
             
             Make sure there are no bold characters in the response. The response mustn't require the user
             to add more information to it. You must write it to completion. The whole cover letter should be
-            no larger than 500 words
+            no larger than 500 words. Make sure the writing is laid out clearly like a letter should be laid out
             
             """
 
@@ -248,10 +276,9 @@ class Utility:
 
             completion = TEXT_GEN_MODEL.generate_content(full_prompt)
             completion = completion.candidates[0].content.parts[0].text
-            completion = completion.replace(["*", "**"], "")
+            completion = completion.replace("*", "").replace("**", "")
 
             return completion
         except Exception as e:
             print(e)
             return None
-
