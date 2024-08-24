@@ -78,14 +78,14 @@ async def get_cover_letter(info: CL):
 
 
 @app.post("/google-signup")
-async def google_signup(email: str, name: str):
-    result = Utility.get_user_id(email)
+async def google_signup(user: GoogleUser):
+    result = Utility.get_user_id(user.email)
     if result:
         raise HTTPException(
             status_code=420, detail="User already exists. Please login")
     else:
         result = Utility.create_new_user(
-            email, name=name, password=os.getenv("GOOGLE_PLACEHOLDER_PASSWORD"))
+            user.email, name=user.name, password=os.getenv("GOOGLE_PLACEHOLDER_PASSWORD"))
         if result:
             return {"user_id": result}
         else:
