@@ -21,14 +21,14 @@ This directory then serves as the backend for cv-extension-fe
 All the necessary packages can be found within the requirements.txt file. There’s also a Utility class for DB interactions and all features. Be sure to setup an .env file containing: 
 
 ```python
-DB_HOST=localhost (hosted location)
-DB_USER=postgres (username for your DB login)
-DB_PASSWORD=password (password for DB_USER)
-DB_PORT=5432 (this is the standard port number for PSQL, if you changed then use yours)
+DB_HOST=localhost # (hosted location)
+DB_USER=postgres # (username for your DB login)
+DB_PASSWORD=password # (password for DB_USER)
+DB_PORT=5432 # (this is the standard port number for PSQL, if you changed then use yours)
 
-EMBEDDING_MODEL_NAME=model_name (I used 'bert-base-uncased')
+EMBEDDING_MODEL_NAME=model_name # (I used 'bert-base-uncased')
 
-GEMINI_API_KEY=key (This is for generating the cover letter response. Feel Free to use whatever model you want)
+GEMINI_API_KEY=key # (This is for generating the cover letter response. Feel Free to use whatever model you want)
 ```
 
 Remember to make a gitignore file that ignores **.env
