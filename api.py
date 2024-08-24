@@ -1,3 +1,6 @@
+import os
+from dotenv import load_dotenv
+
 import uvicorn
 from fastapi import FastAPI, UploadFile, Form
 from fastapi.middleware.cors import CORSMiddleware
@@ -8,6 +11,7 @@ from models import LoginUser, SignUpUser, CL
 
 
 app = FastAPI()
+load_dotenv(".env")
 
 origins = [
     "chrome-extension://njkagfnbfcchbifiohjgllfgabnikdgb"
@@ -71,6 +75,22 @@ async def get_cover_letter(info: CL):
     else:
         raise HTTPException(
             status_code=415, detail="Failed to make cover letter. Please try again")
+
+
+@app.post("/google-signup")
+async def google_signup(email: str, name: str):
+    result = Utility.get_user_id(email)
+    if result:
+        raise HTTPException(
+            status_code=420, detail="User already exists. Please login")
+    else:
+        result = Utility.create_new_user(
+            email, name=name, password=os.getenv("GOOGLE_PLACEHOLDER_PASSWORD"))
+        if result:
+            return {"user_id": result}
+        else:
+            raise HTTPException(
+                status_code=500, detail="Error signing up user. Please try again")
 
 
 if __name__ == "__main__":
