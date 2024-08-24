@@ -9,6 +9,12 @@ class LoginUser(BaseModel):
 class SignUpUser(LoginUser):
     name: str
 
+
+class GoogleUser(BaseModel):
+    email: str
+    name: str
+
+
 class CL(BaseModel):
     job_description: str
     user_id: int

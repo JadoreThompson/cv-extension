@@ -114,7 +114,9 @@ class Utility:
 
     # Logs in the user
     @staticmethod
-    def login_user(email, password=None):
+    def login_user(email, oauth=None, password=None):
+        if oauth:
+            password = os.getenv("GOOGLE_PLACEHOLDER_PASSWORD")
         try:
             with get_db_connection() as conn:
                 with conn.cursor() as cur:

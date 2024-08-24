@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import HTTPException
 
 from cover_letter_utility import Utility
-from models import LoginUser, SignUpUser, CL
+from models import LoginUser, SignUpUser, CL, GoogleUser
 
 
 app = FastAPI()
@@ -86,6 +86,21 @@ async def google_signup(email: str, name: str):
     else:
         result = Utility.create_new_user(
             email, name=name, password=os.getenv("GOOGLE_PLACEHOLDER_PASSWORD"))
+        if result:
+            return {"user_id": result}
+        else:
+            raise HTTPException(
+                status_code=500, detail="Error signing up user. Please try again")
+
+
+@app.post("/google-login")
+async def google_login(user: GoogleUser):
+    result = Utility.login_user(user.email, oauth="google")
+    if isinstance(result, int):
+        return {"user_id": result}
+    else:
+        result = Utility.create_new_user(
+            user.email, user.name, password=os.getenv("GOOGLE_PLACEHOLDER_PASSWORD"))
         if result:
             return {"user_id": result}
         else:
