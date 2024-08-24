@@ -12,7 +12,7 @@ This directory then serves as the backend for cv-extension-fe
 
 - Python 3.12.5 was used for development
 - To actually generate the embeddings pytorch was utilised and thus you need C++ Redistributable. Easiest way to get it is to download Visual Studio and select windows desktop app development. Torch is tricky to download for some people but if you do have
-- PSQL SQL Shell minimum for interacting with the database
+- PSQL SQL Shell 2022 minimum for interacting with the database
 
 ## **Installation**
 
@@ -30,6 +30,8 @@ EMBEDDING_MODEL_NAME=model_name (I used 'bert-base-uncased')
 
 GEMINI_API_KEY=key (This is for generating the cover letter response. Feel Free to use whatever model you want)
 ```
+
+Remember to make a gitignore file that ignores **.env
 
 ## **Contact**
 
